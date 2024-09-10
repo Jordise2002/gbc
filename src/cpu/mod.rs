@@ -1,5 +1,7 @@
 mod tests;
 
+use core::panic;
+
 use byteorder::{ByteOrder, LittleEndian};
 
 use crate::{
@@ -111,6 +113,7 @@ impl Cpu {
         (self.f & 0b01000000) != 0
     }
 
+    //REVISAR SI ESTA MIERDA SE HACE BIEN
     fn get_half_carry_flag(&self) -> bool {
         (self.f & 0b00100000) != 0
     }
@@ -120,19 +123,19 @@ impl Cpu {
     }
 
     fn set_zero_flag(&mut self, state:bool) {
-        self.f = (self.f & 0b10000000)| (state as u8) << 7;
+        self.f = (self.f & !0b10000000)| (state as u8) << 7;
     }
 
     fn set_substraction_flag(&mut self, state: bool) {
-        self.f = (self.f & 0b01000000) | (state as u8) << 6;
+        self.f = (self.f & !0b01000000) | (state as u8) << 6;
     }
 
     fn set_half_carry_flag(&mut self, state: bool) {
-        self.f = (self.f & 0b00100000) | (state as u8) << 5;
+        self.f = (self.f & !0b00100000) | (state as u8) << 5;
     }
 
     fn set_carry_flag(&mut self, state:bool ) {
-        self.f = (self.f & 0b00010000) | (state as u8) << 4;
+        self.f = (self.f & !0b00010000) | (state as u8) << 4;
     }
 
     fn fetch(&mut self) -> Option<u8> {
@@ -217,7 +220,9 @@ impl Cpu {
                 self.set_half_carry_flag(self.a > 0xF);
             },
             code::Operand::HL => {
-                let unceiled_value = self.get_hl() as i32 + self.fetch_operand_value(op2_type);
+                let hl_value = self.get_hl();
+                let other_value = self.fetch_operand_value(op2_type);
+                let unceiled_value:i32 = hl_value as i32 + other_value as i32;
                 self.set_hl(unceiled_value as u16);
                 self.set_carry_flag(unceiled_value > 0xFFFF);
                 self.set_half_carry_flag(self.get_hl() > 0xF);
@@ -234,6 +239,22 @@ impl Cpu {
         }
     }
  
+    fn handle_sub_op(&mut self, op1_type: code::Operand, op2_type: code::Operand)
+    {
+        if let code::Operand::A = op1_type
+        {
+            let other_operand = self.fetch_operand_value(op2_type);
+            let unceiled_value = self.a as i32 - other_operand;
+            self.a = unceiled_value as u8;
+
+            self.set_substraction_flag(true);
+            self.set_zero_flag(self.a == 0);
+            self.set_half_carry_flag()
+        }
+        else {
+            panic!("SUB NOT SUPPOTED FOR {:?} {:?}", op1_type, op2_type)
+        }
+    }
     pub fn run(&mut self) {
         while let Some(c) = self.fetch() {
             let (instruction, cycles) = code::get_instruction_specs_from_code(c).expect(format!("Non Valid Opcode: {}", c).as_str());

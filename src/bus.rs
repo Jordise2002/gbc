@@ -17,7 +17,7 @@ impl Bus {
         let rom_banks = cart.get_rom_banks();
         let cartridge_ram = cart.get_ram_banks();
 
-        let cartridge_rom = MemoryBank::new(16 * 1024, rom_banks, 1);
+        let cartridge_rom = MemoryBank::new_from_bytes(16 * 1024, rom_banks, 1, cart.content);
 
         let cartridge_switchable_ram = MemoryBank::new(8 * 1024, cartridge_ram, 0);
 
@@ -54,7 +54,7 @@ impl Bus {
         let rom_banks = 2;
         let cartridge_ram = 1;
 
-        let cartridge_rom = MemoryBank::new(16 * 1024, rom_banks, 1);
+        let cartridge_rom = MemoryBank::new_from_bytes(16 * 1024, rom_banks, 1, cart.content);
 
         let cartridge_switchable_ram = MemoryBank::new(8 * 1024, cartridge_ram, 0);
 

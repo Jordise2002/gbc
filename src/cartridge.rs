@@ -1,7 +1,7 @@
 use std::fs;
 
 pub struct Cartidge {
-    content: Vec<u8>,
+    pub content: Vec<u8>,
 }
 
 impl Cartidge {

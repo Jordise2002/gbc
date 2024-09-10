@@ -15,6 +15,16 @@ impl MemoryBank {
         }
     }
 
+    pub fn new_from_bytes(bank_size: usize, bank_ammount: usize, current_bank: usize, content: Vec<u8>) -> Self
+    {
+        MemoryBank {
+            bank_size,
+            bank_ammount,
+            current_bank,
+            mem: content,
+        }
+    }
+
     pub fn read(&self, address: u16) -> Option<u8> {
         self.mem
             .get(address as usize + self.current_bank * self.bank_size)

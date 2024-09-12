@@ -1,6 +1,7 @@
 mod tests;
 
 use core::panic;
+use std::thread::panicking;
 
 use byteorder::{ByteOrder, LittleEndian};
 
@@ -112,8 +113,7 @@ impl Cpu {
     fn get_substraction_flag(&self) -> bool {
         (self.f & 0b01000000) != 0
     }
-
-    //REVISAR SI ESTA MIERDA SE HACE BIEN
+    
     fn get_half_carry_flag(&self) -> bool {
         (self.f & 0b00100000) != 0
     }
@@ -152,7 +152,6 @@ impl Cpu {
         Some(LittleEndian::read_u16(&[second_byte, first_byte]))
     }
 
-    //TODO: Gestionar correctamente el valor de fetch aquí
     fn fetch_operand_value(&mut self, op_type: code::Operand) -> i32
     {
         match op_type
@@ -213,48 +212,212 @@ impl Cpu {
         match op1_type
         {
             code::Operand::A => {
-                let unceiled_value = self.a as i32 + self.fetch_operand_value(op2_type);
+                let other_value = self.fetch_operand_value(op2_type);
+                self.set_half_carry_flag(((self.a & 0xF) + (other_value as u8 & 0xF)) & 0x10 == 0x10);
+                let unceiled_value = self.a as i32 + other_value;
                 self.a = unceiled_value as u8;
                 self.set_zero_flag(self.a == 0);
                 self.set_carry_flag(unceiled_value > 0xFF);
-                self.set_half_carry_flag(self.a > 0xF);
             },
             code::Operand::HL => {
                 let hl_value = self.get_hl();
                 let other_value = self.fetch_operand_value(op2_type);
+                self.set_half_carry_flag(((hl_value & 0xFFF) + (other_value as u16 & 0xFFF)) & 0x1000 == 0x1000);
                 let unceiled_value:i32 = hl_value as i32 + other_value as i32;
                 self.set_hl(unceiled_value as u16);
                 self.set_carry_flag(unceiled_value > 0xFFFF);
-                self.set_half_carry_flag(self.get_hl() > 0xF);
             },
             code::Operand::SP => 
             {
-                let unceiled_value = (self.sp as i32 + self.fetch_operand_value(op2_type));
+                let other_value = self.fetch_operand_value(op2_type);
+                let unceiled_value = (self.sp as i32 + other_value);
+                self.set_half_carry_flag(((self.sp & 0xFFF) + (other_value as u16 & 0xFFF)) & 0x1000 == 0x1000);
                 self.sp = unceiled_value as u16;
                 self.set_zero_flag(false);
                 self.set_carry_flag(unceiled_value > 0xFFFF);
-                self.set_half_carry_flag(self.get_hl() > 0xF);
             }
             _=> panic!("ADD NOT SUPPORTED FOR {:?} {:?}", op1_type, op2_type),
+        }
+    }
+
+    fn handle_dec_op(&mut self, op1_type: code::Operand)
+    {
+        self.set_substraction_flag(true);
+        let value = self.fetch_operand_value(op1_type.clone());
+        match op1_type.get_operand_size()
+        {
+            1 => {
+                self.set_half_carry_flag(value as u8 & 0x0F < 1);
+            }   
+            2 => {
+                self.set_half_carry_flag(value as u16 & 0x0FFF < 1);
+            }
+            _ => {
+                panic!("Operand size {} not suported for DEC", op1_type.get_operand_size())
+            }
+        }
+        match op1_type
+        {
+            code::Operand::A => 
+            {
+                self.a = self.a - 1;
+                self.set_zero_flag(self.a == 0);
+            }
+            code::Operand::B => {
+                self.b = self.b - 1;
+                self.set_zero_flag(self.b == 0);
+            }
+            code::Operand::L => {
+                self.l = self.l - 1;
+                self.set_zero_flag(self.l == 0);
+            }
+            code::Operand::E => {
+                self.e = self.e - 1;
+                self.set_zero_flag(self.e == 0);
+            }
+            code::Operand::C => {
+                self.c = self.c - 1;
+                self.set_zero_flag(self.c == 0);
+            }
+            code::Operand::D => {
+                self.d = self.d - 1;
+                self.set_zero_flag(self.d == 0);
+            }
+            code::Operand::H => {
+                self.h = self.h - 1;
+                self.set_zero_flag(self.h == 0);
+            }
+            code::Operand::iHL => {
+                self.memory.write(self.get_hl(), self.memory.read(self.get_hl()).expect("Wrong memory access!") - 1);
+                self.set_zero_flag(self.memory.read(self.get_hl()).expect("Wrong memory access!") == 0);
+            }
+            code::Operand::BC => {
+                self.set_bc(self.get_bc() - 1);
+                self.set_zero_flag(self.get_bc() == 0);
+            }
+            code::Operand::DE => {
+                self.set_de(self.get_de() - 1);
+                self.set_zero_flag(self.get_de() == 0);
+            }
+            code::Operand::HL => {
+                self.set_hl(self.get_hl() - 1);
+                self.set_zero_flag(self.get_hl() == 0);
+            }
+            code::Operand::SP => {
+                self.sp = self.sp - 1;
+                self.set_zero_flag(self.sp == 0);
+            }
+            _ => {
+                panic!("DEC not supported for Operand {:?}", op1_type);
+            }
+        }
+    }
+
+    fn handle_inc_op(& mut self, op1_type:code::Operand)
+    {
+        match op1_type
+        {
+            code::Operand::BC => {
+                self.set_bc(self.get_bc() + 1);
+            }
+            code::Operand::DE => {
+                self.set_de(self.get_de() + 1);
+            }
+            code::Operand::HL => {
+                self.set_hl(self.get_hl() + 1);
+            }
+            code::Operand::SP => {
+                self.sp = self.sp + 1;
+            }
+            code::Operand::B => {
+                self.set_half_carry_flag(((self.b & 0x0F) + 1) & 0x10 == 0x10);
+                self.b = self.b + 1;
+                self.set_zero_flag(self.b == 0);
+            }
+            code::Operand::D => {
+                self.set_half_carry_flag(((self.d & 0x0F) + 1) & 0x10 == 0x10);
+                self.d = self.d + 1;
+                self.set_zero_flag(self.d == 0);
+            }
+            code::Operand::H => {
+                self.set_half_carry_flag(((self.h & 0x0F) + 1) & 0x10 == 0x10);
+                self.h = self.h + 1;
+                self.set_zero_flag(self.h == 0);
+            }
+            code::Operand::iHL => {
+                self.set_half_carry_flag((self.memory.read(self.get_hl()).expect("Wrong access memory!") & 0x0F + 1) & 0x10 == 0x10);
+                self.memory.write(self.get_hl(), self.memory.read(self.get_hl()).expect("wrong access memory!") + 1);
+                self.set_zero_flag(self.memory.read(self.get_hl()).expect("Wrong memory access!") == 0);
+            }
+            code::Operand::C => {
+                self.set_half_carry_flag(((self.c & 0x0F) + 1) & 0x10 == 0x10);
+                self.c = self.c + 1;
+                self.set_zero_flag(self.c == 0);
+            }
+            code::Operand::E => {
+                self.set_half_carry_flag(((self.e & 0x0F) + 1) & 0x10 == 0x10);
+                self.e = self.e + 1;
+                self.set_zero_flag(self.e == 0);
+            }
+            code::Operand::L => {
+                self.set_half_carry_flag(((self.l & 0x0F) + 1) & 0x10 == 0x10);
+                self.l = self.l + 1;
+                self.set_zero_flag(self.l == 0);
+            }
+            code::Operand::A => {
+                self.set_half_carry_flag(((self.a & 0x0F) + 1) & 0x10 == 0x10);
+                self.a = self.a + 1;
+                self.set_zero_flag(self.a == 0);
+            }
+            _ => {
+                panic!("INC not supported for operand {:?}", op1_type);
+            }
+        }
+
+        if op1_type.get_operand_size() == 1
+        {
+            self.set_substraction_flag(false);
         }
     }
  
     fn handle_sub_op(&mut self, op1_type: code::Operand, op2_type: code::Operand)
     {
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
         if let code::Operand::A = op1_type
         {
             let other_operand = self.fetch_operand_value(op2_type);
+            self.set_half_carry_flag(other_operand as u8 & 0xF > self.a & 0xF); //Comparamos los nibbles menores de los operadores
             let unceiled_value = self.a as i32 - other_operand;
             self.a = unceiled_value as u8;
 
             self.set_substraction_flag(true);
             self.set_zero_flag(self.a == 0);
-            self.set_half_carry_flag()
         }
         else {
             panic!("SUB NOT SUPPOTED FOR {:?} {:?}", op1_type, op2_type)
         }
     }
+
+    fn handle_and_op(&mut self, op1_type: code::Operand, op2_type: code::Operand)
+    {
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
+        self.set_half_carry_flag(true);
+        self.set_substraction_flag(false);
+        self.set_carry_flag(false);
+
+        if let code::Operand::A = op1_type
+        {
+            let other_value = self.fetch_operand_value(op2_type);
+            self.a = self.a & other_value as u8;
+            self.set_zero_flag(self.a == 0);
+        }
+        else {
+            panic!("AND NOT SUPPORTED FOR {:?} and {:?}", op1_type, op2_type);
+        }
+    }
+
     pub fn run(&mut self) {
         while let Some(c) = self.fetch() {
             let (instruction, cycles) = code::get_instruction_specs_from_code(c).expect(format!("Non Valid Opcode: {}", c).as_str());
@@ -264,6 +427,19 @@ impl Cpu {
                 code::Instruction::ADD(op1_type, op2_type) => 
                 {
                     self.handle_add_op(op1_type, op2_type);
+                }
+                code::Instruction::SUB(op1_type, op2_type) =>
+                {
+                    self.handle_sub_op(op1_type, op2_type);
+                }
+                code::Instruction::DEC(op1_type) => {
+                    self.handle_dec_op(op1_type);
+                }
+                code::Instruction::INC(op1_type) => {
+                    self.handle_inc_op(op1_type);
+                }
+                code::Instruction::AND(op1_type, op2_type) => {
+                    self.handle_and_op(op1_type, op2_type);
                 }
                 _ => 
                 {

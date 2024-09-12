@@ -3,7 +3,7 @@ use core::panic;
 use enumn::N;
 
 #[allow(non_camel_case_types)]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operand 
 {
     N8,

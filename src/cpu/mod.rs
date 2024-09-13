@@ -260,51 +260,51 @@ impl Cpu {
         {
             code::Operand::A => 
             {
-                self.a = self.a - 1;
+                self.a = self.a.wrapping_sub(1);
                 self.set_zero_flag(self.a == 0);
             }
             code::Operand::B => {
-                self.b = self.b - 1;
+                self.b = self.b.wrapping_sub(1);
                 self.set_zero_flag(self.b == 0);
             }
             code::Operand::L => {
-                self.l = self.l - 1;
+                self.l = self.b.wrapping_sub(1);
                 self.set_zero_flag(self.l == 0);
             }
             code::Operand::E => {
-                self.e = self.e - 1;
+                self.e = self.e.wrapping_sub(1);
                 self.set_zero_flag(self.e == 0);
             }
             code::Operand::C => {
-                self.c = self.c - 1;
+                self.c = self.c.wrapping_sub(1);
                 self.set_zero_flag(self.c == 0);
             }
             code::Operand::D => {
-                self.d = self.d - 1;
+                self.d = self.d.wrapping_sub(1);
                 self.set_zero_flag(self.d == 0);
             }
             code::Operand::H => {
-                self.h = self.h - 1;
+                self.h = self.h.wrapping_sub(1);
                 self.set_zero_flag(self.h == 0);
             }
             code::Operand::iHL => {
-                self.memory.write(self.get_hl(), self.memory.read(self.get_hl()).expect("Wrong memory access!") - 1);
+                self.memory.write(self.get_hl(), self.memory.read(self.get_hl()).expect("Wrong memory access!").wrapping_sub(1));
                 self.set_zero_flag(self.memory.read(self.get_hl()).expect("Wrong memory access!") == 0);
             }
             code::Operand::BC => {
-                self.set_bc(self.get_bc() - 1);
+                self.set_bc(self.get_bc().wrapping_sub(1));
                 self.set_zero_flag(self.get_bc() == 0);
             }
             code::Operand::DE => {
-                self.set_de(self.get_de() - 1);
+                self.set_de(self.get_de().wrapping_sub(1));
                 self.set_zero_flag(self.get_de() == 0);
             }
             code::Operand::HL => {
-                self.set_hl(self.get_hl() - 1);
+                self.set_hl(self.get_hl().wrapping_sub(1));
                 self.set_zero_flag(self.get_hl() == 0);
             }
             code::Operand::SP => {
-                self.sp = self.sp - 1;
+                self.sp = self.sp.wrapping_sub(1);
                 self.set_zero_flag(self.sp == 0);
             }
             _ => {
@@ -318,55 +318,55 @@ impl Cpu {
         match op1_type
         {
             code::Operand::BC => {
-                self.set_bc(self.get_bc() + 1);
+                self.set_bc(self.get_bc().wrapping_add(1));
             }
             code::Operand::DE => {
-                self.set_de(self.get_de() + 1);
+                self.set_de(self.get_de().wrapping_add(1));
             }
             code::Operand::HL => {
-                self.set_hl(self.get_hl() + 1);
+                self.set_hl(self.get_hl().wrapping_add(1));
             }
             code::Operand::SP => {
-                self.sp = self.sp + 1;
+                self.sp = self.sp.wrapping_add(1);
             }
             code::Operand::B => {
                 self.set_half_carry_flag(((self.b & 0x0F) + 1) & 0x10 == 0x10);
-                self.b = self.b + 1;
+                self.b = self.b.wrapping_add(1);
                 self.set_zero_flag(self.b == 0);
             }
             code::Operand::D => {
                 self.set_half_carry_flag(((self.d & 0x0F) + 1) & 0x10 == 0x10);
-                self.d = self.d + 1;
+                self.d = self.d.wrapping_add(1);
                 self.set_zero_flag(self.d == 0);
             }
             code::Operand::H => {
                 self.set_half_carry_flag(((self.h & 0x0F) + 1) & 0x10 == 0x10);
-                self.h = self.h + 1;
+                self.h = self.h.wrapping_add(1);
                 self.set_zero_flag(self.h == 0);
             }
             code::Operand::iHL => {
                 self.set_half_carry_flag((self.memory.read(self.get_hl()).expect("Wrong access memory!") & 0x0F + 1) & 0x10 == 0x10);
-                self.memory.write(self.get_hl(), self.memory.read(self.get_hl()).expect("wrong access memory!") + 1);
+                self.memory.write(self.get_hl(), self.memory.read(self.get_hl()).expect("wrong access memory!").wrapping_add(1));
                 self.set_zero_flag(self.memory.read(self.get_hl()).expect("Wrong memory access!") == 0);
             }
             code::Operand::C => {
                 self.set_half_carry_flag(((self.c & 0x0F) + 1) & 0x10 == 0x10);
-                self.c = self.c + 1;
+                self.c = self.c.wrapping_add(1);
                 self.set_zero_flag(self.c == 0);
             }
             code::Operand::E => {
                 self.set_half_carry_flag(((self.e & 0x0F) + 1) & 0x10 == 0x10);
-                self.e = self.e + 1;
+                self.e = self.e.wrapping_add(1);
                 self.set_zero_flag(self.e == 0);
             }
             code::Operand::L => {
                 self.set_half_carry_flag(((self.l & 0x0F) + 1) & 0x10 == 0x10);
-                self.l = self.l + 1;
+                self.l = self.l.wrapping_add(1);
                 self.set_zero_flag(self.l == 0);
             }
             code::Operand::A => {
                 self.set_half_carry_flag(((self.a & 0x0F) + 1) & 0x10 == 0x10);
-                self.a = self.a + 1;
+                self.a = self.a.wrapping_add(1);
                 self.set_zero_flag(self.a == 0);
             }
             _ => {
@@ -382,17 +382,28 @@ impl Cpu {
  
     fn handle_sub_op(&mut self, op1_type: code::Operand, op2_type: code::Operand)
     {
+        if let code::Operand::A = op1_type.clone()
+        {
+            self.a = self.handle_cp_op(op1_type, op2_type);
+        }
+        else {
+            panic!("CP NOT SUPPORTED FOR {:?} {:?}", op1_type, op2_type);
+        }
+    }
+    fn handle_cp_op(&mut self, op1_type: code::Operand, op2_type: code::Operand) -> u8
+    {
         assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
-
+        
         if let code::Operand::A = op1_type
         {
             let other_operand = self.fetch_operand_value(op2_type);
             self.set_half_carry_flag(other_operand as u8 & 0xF > self.a & 0xF); //Comparamos los nibbles menores de los operadores
             let unceiled_value = self.a as i32 - other_operand;
-            self.a = unceiled_value as u8;
+            let a = unceiled_value as u8;
 
             self.set_substraction_flag(true);
             self.set_zero_flag(self.a == 0);
+            a
         }
         else {
             panic!("SUB NOT SUPPOTED FOR {:?} {:?}", op1_type, op2_type)
@@ -418,6 +429,69 @@ impl Cpu {
         }
     }
 
+    fn handle_ld_op(& mut self, op1_type: code::Operand, op2_type: code::Operand)
+    {
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
+        let other_value = self.fetch_operand_value(op2_type.clone());
+        match op1_type
+        {
+            code::Operand::BC => {
+                self.set_bc(other_value as u16);
+            }
+            code::Operand::DE => {
+                self.set_de(other_value as u16);
+            }
+            code::Operand::HL => {
+                self.set_hl(other_value as u16);
+            }
+            code::Operand::SP => {
+                self.sp = other_value as u16;
+            }
+            code::Operand::A => {
+                self.a = other_value as u8;
+            }
+            code::Operand::D => {
+                self.d = other_value as u8;
+            }
+            code::Operand::H => {
+                self.h = other_value as u8;
+            }
+            code::Operand::C => {
+                self.c = other_value as u8;
+            }
+            code::Operand::E => {
+                self.e = other_value as u8;
+            }
+            code::Operand::B => {
+                self.b = other_value as u8;
+            }
+            code::Operand::L => {
+                self.l = other_value as u8;
+            }
+            code::Operand::iDE => {
+                self.memory.write(self.get_de(), other_value as u8);
+            }
+            code::Operand::iHL => {
+                self.memory.write(self.get_hl(), other_value as u8);
+            }
+            code::Operand::iBC => {
+                self.memory.write(self.get_bc(), other_value as u8);
+            }
+            code::Operand::iHLMINUS => {
+                self.memory.write(self.get_hl(), other_value as u8);
+                self.set_hl(self.get_hl() - 1);
+            }
+            code::Operand::iHLPLUS => {
+                self.memory.write(self.get_hl(), other_value as u8);
+                self.set_hl(self.get_hl() + 1);
+            }
+            _ => {
+                panic!("LD NOT SUPPORTED FOR {:?} and {:?}", op1_type, op2_type);
+            }
+        }
+    }
+
     pub fn run(&mut self) {
         while let Some(c) = self.fetch() {
             let (instruction, cycles) = code::get_instruction_specs_from_code(c).expect(format!("Non Valid Opcode: {}", c).as_str());
@@ -440,6 +514,17 @@ impl Cpu {
                 }
                 code::Instruction::AND(op1_type, op2_type) => {
                     self.handle_and_op(op1_type, op2_type);
+                }
+                code::Instruction::NOP => {
+
+                }
+                code::Instruction::LD(op1_type, op2_type) => 
+                {
+                    self.handle_ld_op(op1_type, op2_type);
+                }
+                code::Instruction::CP(op1_type, op2_type) => 
+                {
+                    self.handle_cp_op(op1_type, op2_type);
                 }
                 _ => 
                 {

@@ -171,3 +171,22 @@ fn test_xor_a_b()
     assert_eq!(cpu.get_half_carry_flag(), false);
     assert_eq!(cpu.get_carry_flag(), false)
 }
+
+#[test]
+fn test_or_a_b()
+{
+    let cart = crate::Cartidge::new_from_bytes(vec![crate::code::Opcode::OR_A_B as u8]);
+    let mut cpu = super::Cpu::new_test(cart);
+
+    cpu.a = 4;
+    cpu.b = 3;
+
+    cpu.run();
+
+    assert_eq!(cpu.a, 7);
+
+    assert_eq!(cpu.get_zero_flag(), false);
+    assert_eq!(cpu.get_substraction_flag(), false);
+    assert_eq!(cpu.get_half_carry_flag(), false);
+    assert_eq!(cpu.get_carry_flag(), false)
+}

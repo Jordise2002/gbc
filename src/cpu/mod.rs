@@ -1,6 +1,6 @@
 mod tests;
 
-use core::{panic};
+    use core::{panic};
 
 use byteorder::{ByteOrder, LittleEndian};
 
@@ -552,9 +552,7 @@ impl Cpu {
         {
             let other_operand = self.fetch_operand_value(op2_type);
 
-            let unceiled_value = self.a as i32 ^ other_operand;
-
-            self.a = unceiled_value as u8;
+            self.a = self.a ^ other_operand as u8;
 
             self.set_zero_flag(self.a == 0);
             self.set_substraction_flag(false);
@@ -572,7 +570,13 @@ impl Cpu {
 
         if let code::Operand::A = op1_type
         {
+            let other_operand = self.fetch_operand_value(op2_type);
+            self.a = self.a | other_operand as u8;
 
+            self.set_zero_flag(self.a == 0);
+            self.set_substraction_flag(false);
+            self.set_carry_flag(false);
+            self.set_half_carry_flag(false);
         }
         else {
             panic!("")

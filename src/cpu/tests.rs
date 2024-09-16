@@ -134,3 +134,40 @@ fn test_cp_op_a_b()
     assert_eq!(cpu.get_half_carry_flag(), true);
     assert_eq!(cpu.get_carry_flag(), false)
 }
+
+#[test]
+fn test_sbc_a_ihl()
+{
+    let cart = crate::Cartidge::new_from_bytes(vec![crate::code::Opcode::SBC_A_N8 as u8, 199]);
+    let mut cpu = super::Cpu::new_test(cart);
+
+    cpu.a = 200;
+    cpu.set_carry_flag(true);
+    cpu.set_hl(1);
+
+    cpu.run();
+
+    assert_eq!(cpu.get_zero_flag(),  true);
+    assert_eq!(cpu.get_substraction_flag(), true);
+    assert_eq!(cpu.get_half_carry_flag(), true);
+    assert_eq!(cpu.get_carry_flag(), false);
+}
+
+#[test]
+fn test_xor_a_b()
+{
+    let cart = crate::Cartidge::new_from_bytes(vec![crate::code::Opcode::XOR_A_B as u8]);
+    let mut cpu = super::Cpu::new_test(cart);
+
+    cpu.a = 7;
+    cpu.b = 3;
+
+    cpu.run();
+
+    assert_eq!(cpu.a, 4);
+
+    assert_eq!(cpu.get_zero_flag(), false);
+    assert_eq!(cpu.get_substraction_flag(), false);
+    assert_eq!(cpu.get_half_carry_flag(), false);
+    assert_eq!(cpu.get_carry_flag(), false)
+}

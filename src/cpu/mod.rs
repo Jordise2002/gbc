@@ -1,7 +1,6 @@
 mod tests;
 
-use core::panic;
-use std::thread::panicking;
+use core::{panic};
 
 use byteorder::{ByteOrder, LittleEndian};
 
@@ -492,6 +491,94 @@ impl Cpu {
         }
     }
 
+    fn handle_adc_op(& mut self, op1_type: code::Operand, op2_type: code::Operand) 
+    {
+
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
+        if let code::Operand::A = op1_type
+        {
+            let mut other_operand = self.fetch_operand_value(op2_type);
+            if self.get_carry_flag()
+            {
+                other_operand += 1;
+            }
+
+            let unceiled_value = self.a as i32 + other_operand;
+            self.a = unceiled_value as u8;
+            self.set_zero_flag(self.a == 0);
+            self.set_substraction_flag(false);
+            self.set_carry_flag(unceiled_value > 0xFF);
+            self.set_half_carry_flag(((self.a & 0xF) + (other_operand as u8 & 0xF)) & 0x10 == 0x10);
+        }
+        else {
+            panic!("ADC NOT SUPPORTED FOR {:?}", op1_type)
+        }
+    }
+
+    fn handle_sbc_op(&mut self, op1_type: code::Operand, op2_type: code::Operand)
+    {
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
+        if let code::Operand::A = op1_type
+        {
+            let mut other_operand = self.fetch_operand_value(op2_type);
+
+            if self.get_carry_flag()
+            {
+                other_operand += 1;
+            }
+
+            let unceiled_value = self.a as i32 - other_operand;
+
+            self.a = unceiled_value as u8;
+
+            self.set_zero_flag(self.a == 0);
+            self.set_substraction_flag(true);
+            self.set_carry_flag(unceiled_value > 0xFF);
+            self.set_half_carry_flag(other_operand as u8 & 0xF > self.a & 0xF);
+        }
+        else {
+            panic!("SBC NOT SUPPORTED FOR {:?} {:?}", op1_type, op2_type);
+        }
+    }
+
+
+    fn handle_xor_op(& mut self, op1_type: code::Operand, op2_type: code::Operand)
+    {
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
+        if let code::Operand::A = op1_type
+        {
+            let other_operand = self.fetch_operand_value(op2_type);
+
+            let unceiled_value = self.a as i32 ^ other_operand;
+
+            self.a = unceiled_value as u8;
+
+            self.set_zero_flag(self.a == 0);
+            self.set_substraction_flag(false);
+            self.set_half_carry_flag(false);
+            self.set_carry_flag(false);
+        }
+        else {
+            panic!("XOR NOT SUPPORTED FOR {:?} {:?}", op1_type, op2_type);
+        }
+    }
+
+    fn handle_or_op(& mut self, op1_type: code::Operand, op2_type: code::Operand)
+    {
+        assert_eq!(op1_type.get_operand_size(), op2_type.get_operand_size());
+
+        if let code::Operand::A = op1_type
+        {
+
+        }
+        else {
+            panic!("")
+        }
+    }
+
     pub fn run(&mut self) {
         while let Some(c) = self.fetch() {
             let (instruction, cycles) = code::get_instruction_specs_from_code(c).expect(format!("Non Valid Opcode: {}", c).as_str());
@@ -525,6 +612,22 @@ impl Cpu {
                 code::Instruction::CP(op1_type, op2_type) => 
                 {
                     self.handle_cp_op(op1_type, op2_type);
+                }
+                code::Instruction::ADC(op1_type, op2_type) => 
+                {
+                    self.handle_adc_op(op1_type, op2_type);
+                }
+                code::Instruction::SBC(op1_type, op2_type) => 
+                {
+                    self.handle_sbc_op(op1_type, op2_type);
+                }
+                code::Instruction::XOR(op1_type, op2_type) => 
+                {
+                    self.handle_xor_op(op1_type, op2_type);
+                }
+                code::Instruction::OR(op1_type, op2_type) => 
+                {
+                    self.handle_or_op(op1_type, op2_type);
                 }
                 _ => 
                 {

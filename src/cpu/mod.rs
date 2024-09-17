@@ -1,6 +1,7 @@
 mod tests;
 
     use core::{panic};
+    use std::fmt::format;
 
 use byteorder::{ByteOrder, LittleEndian};
 
@@ -583,6 +584,80 @@ impl Cpu {
         }
     }
 
+    fn handle_pop_op(&mut self, op1_type: code::Operand)
+    {
+        let lsb = self.memory.read(self.sp).expect("Error reading during pop operation");
+        self.sp += 1;
+        let msb = self.memory.read(self.sp).expect("Error reading during pop operation");
+        self.sp += 1;
+        let value = (msb as u16) << 8 + lsb;
+        match op1_type
+        {
+            code::Operand::AF =>
+            {
+                self.set_af(value);
+            }
+            code::Operand::BC =>
+            {
+                self.set_bc(value);
+            }
+            code::Operand::DE => 
+            {
+                self.set_de(value);
+            }
+            code::Operand::HL => 
+            {
+                self.set_hl(value);
+            }
+            _=> 
+            {
+                panic!("POP NOT SUPPORTED FOR {:?}", op1_type);
+            }
+        }
+    }
+
+    fn handle_push_op(&mut self, op1_type: code::Operand)
+    {
+        let value = match op1_type
+        {
+            code::Operand::AF =>
+            {
+                self.get_af()
+            }
+            code::Operand::BC => 
+            {
+                self.get_bc()
+            }
+            code::Operand::DE => 
+            {
+                self.get_de()
+            }
+            code::Operand::HL => 
+            {
+                self.get_hl()
+            }
+            _=> {
+                panic!("PUSH NOT SUPPORTED FOR {:?}", op1_type);
+            }
+        };
+
+        self.sp -= 1;
+        self.memory.write(self.sp, ((value & 0xFF00) >> 8) as u8);
+        self.sp -= 1;
+        self.memory.write(self.sp, (value & 0x00FF) as u8);
+
+    }
+
+    fn handle_jump_relative_op(&mut self, op1_type: code::Operand)
+    {
+        
+    }
+
+    fn handle_jump_absolute_op(&mut self, op1_type: code::Operand)
+    {
+
+    }
+
     pub fn run(&mut self) {
         while let Some(c) = self.fetch() {
             let (instruction, cycles) = code::get_instruction_specs_from_code(c).expect(format!("Non Valid Opcode: {}", c).as_str());
@@ -632,6 +707,28 @@ impl Cpu {
                 code::Instruction::OR(op1_type, op2_type) => 
                 {
                     self.handle_or_op(op1_type, op2_type);
+                }
+                code::Instruction::POP(op1_type) => 
+                {
+                    self.handle_pop_op(op1_type);
+                }
+                code::Instruction::PUSH(op1_type) => 
+                {
+                    self.handle_push_op(op1_type);
+                }
+                code::Instruction::JP(jump_type,op1_type) => 
+                {
+                    match jump_type
+                    {
+                        code::JumpType::Absolute =>
+                        {
+                            self.handle_jump_absolute_op(op1_type);
+                        }
+                        code::JumpType::Relative =>
+                        {
+                            self.handle_jump_relative_op(op1_type);
+                        }
+                    }
                 }
                 _ => 
                 {

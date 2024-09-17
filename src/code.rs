@@ -67,6 +67,12 @@ impl Operand
         }
     }
 }
+pub enum JumpType
+{
+    Absolute,
+    Relative
+}
+
 #[allow(non_camel_case_types)]
 pub enum Instruction 
 {
@@ -88,9 +94,10 @@ pub enum Instruction
     RLCA,
     RRCA,
     RLA,
-    JR(Operand),
-    JR_ZERO(bool, Operand),//true means jump when zero flag is set
-    JR_CARRY(bool, Operand),//true means jump when carry flag is set
+    RRA,
+    JP(JumpType, Operand),
+    JP_ZERO(JumpType, bool, Operand),//true means jump when zero flag is set
+    JP_CARRY(JumpType, bool, Operand),//true means jump when carry flag is set
     RET,
     RET_ZERO(bool),//true means jump when zero flag is set
     RET_CARRY(bool),//true means jump when carry flag is set
@@ -100,7 +107,6 @@ pub enum Instruction
     CALL_CARRY(bool, Operand),
     RST(u8),
     PREFIX,
-    RRA,
     DAA,
     CPL,
     SCF,
@@ -401,7 +407,7 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o25 => Some((Instruction::DEC(Operand::D), 4)),
         0o26 => Some((Instruction::LD(Operand::D, Operand::N8), 8)),
         0o27 => Some((Instruction::RLA, 4)),
-        0o30 => Some((Instruction::JR(Operand::E8), 12)),
+        0o30 => Some((Instruction::JP(JumpType::Relative, Operand::E8), 12)),
         0o31 => Some((Instruction::ADD(Operand::HL, Operand::DE), 8)),
         0o32 => Some((Instruction::LD(Operand::A, Operand::iDE), 8)),
         0o33 => Some((Instruction::DEC(Operand::DE), 8)),
@@ -409,7 +415,7 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o35 => Some((Instruction::DEC(Operand::E), 4)),
         0o36 => Some((Instruction::LD(Operand::E, Operand::N8), 8)),
         0o37 => Some((Instruction::RRA, 4)),
-        0o40 => Some((Instruction::JR_ZERO(false, Operand::E8), 12)),
+        0o40 => Some((Instruction::JP_ZERO(JumpType::Relative, false, Operand::E8), 12)),
         0o41 => Some((Instruction::LD(Operand::HL, Operand::N16), 12)),
         0o42 => Some((Instruction::LD(Operand::iHLPLUS, Operand::A), 8)),
         0o43 => Some((Instruction::INC(Operand::HL), 8)),
@@ -417,7 +423,7 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o45 => Some((Instruction::DEC(Operand::H), 4)),
         0o46 => Some((Instruction::LD(Operand::H, Operand::N8), 8)),
         0o47 => Some((Instruction::DAA, 4)),
-        0o50 => Some((Instruction::JR_ZERO(true, Operand::E8), 12)),
+        0o50 => Some((Instruction::JP_ZERO(JumpType::Relative, true, Operand::E8), 12)),
         0o51 => Some((Instruction::ADD(Operand::HL, Operand::HL), 8)),
         0o52 => Some((Instruction::LD(Operand::A, Operand::iHLPLUS), 8)),
         0o53 => Some((Instruction::DEC(Operand::HL), 8)),
@@ -425,7 +431,7 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o55 => Some((Instruction::DEC(Operand::L), 4)),
         0o56 => Some((Instruction::LD(Operand::L, Operand::N8), 8)),
         0o57 => Some((Instruction::CPL, 4)),
-        0o60 => Some((Instruction::JR_CARRY(false, Operand::E8), 12)),
+        0o60 => Some((Instruction::JP_CARRY(JumpType::Relative, false, Operand::E8), 12)),
         0o61 => Some((Instruction::LD(Operand::SP, Operand::N16), 12)),
         0o62 => Some((Instruction::LD(Operand::iHLMINUS, Operand::A), 8)),
         0o63 => Some((Instruction::INC(Operand::SP), 8)),
@@ -433,7 +439,7 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o65 => Some((Instruction::DEC(Operand::iHL), 12)),
         0o66 => Some((Instruction::LD(Operand::iHL, Operand::N8), 12)),
         0o67 => Some((Instruction::SCF, 4)),
-        0o70 => Some((Instruction::JR_CARRY(true, Operand::E8), 12)),
+        0o70 => Some((Instruction::JP_CARRY(JumpType::Relative, true, Operand::E8), 12)),
         0o71 => Some((Instruction::ADD(Operand::HL, Operand::SP), 8)),
         0o72 => Some((Instruction::LD(Operand::A, Operand::iHLMINUS), 8)),
         0o73 => Some((Instruction::DEC(Operand::SP), 8)),
@@ -571,15 +577,15 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o277 => Some((Instruction::CP(Operand::A, Operand::A), 4)),
         0o300 => Some((Instruction::RET_ZERO(false), 8)),
         0o301 => Some((Instruction::POP(Operand::BC), 12)),
-        0o302 => Some((Instruction::JR_ZERO(false, Operand::N16), 12)),
-        0o303 => Some((Instruction::JR(Operand::N16), 12)),
+        0o302 => Some((Instruction::JP_ZERO(JumpType::Absolute, false, Operand::N16), 12)),
+        0o303 => Some((Instruction::JP(JumpType::Absolute, Operand::N16), 12)),
         0o304 => Some((Instruction::CALL_ZERO(false, Operand::N16), 12)),
         0o305 => Some((Instruction::PUSH(Operand::BC), 16)),
         0o306 => Some((Instruction::ADD(Operand::A, Operand::N8), 8)),
         0o307 => Some((Instruction::RST(0x00), 16)),
         0o310 => Some((Instruction::RET_ZERO(true), 8)),
         0o311 => Some((Instruction::RET, 16)),
-        0o312 => Some((Instruction::JR_ZERO(true, Operand::N16), 12)),
+        0o312 => Some((Instruction::JP_ZERO(JumpType::Absolute, true, Operand::N16), 12)),
         0o313 => Some((Instruction::PREFIX, 8)),
         0o314 => Some((Instruction::CALL_ZERO(true, Operand::N16), 12)),
         0o315 => Some((Instruction::CALL(Operand::N16), 12)),
@@ -587,14 +593,14 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o317 => Some((Instruction::RST(0x08), 16)),
         0o320 => Some((Instruction::RET_CARRY(false), 8)),
         0o321 => Some((Instruction::POP(Operand::DE), 12)),
-        0o322 => Some((Instruction::JR_CARRY(false, Operand::N16), 12)),
+        0o322 => Some((Instruction::JP_CARRY(JumpType::Absolute, false, Operand::N16), 12)),
         0o324 => Some((Instruction::CALL_CARRY(false, Operand::N16), 12)),
         0o325 => Some((Instruction::PUSH(Operand::DE), 16)),
         0o326 => Some((Instruction::SUB(Operand::A, Operand::N8), 8)),
         0o327 => Some((Instruction::RST(0x10), 16)),
         0o330 => Some((Instruction::RET_CARRY(true), 8)),
         0o331 => Some((Instruction::RETI, 16)),
-        0o332 => Some((Instruction::JR_CARRY(true, Operand::N16), 12)),
+        0o332 => Some((Instruction::JP_CARRY(JumpType::Absolute, true, Operand::N16), 12)),
         0o334 => Some((Instruction::CALL_CARRY(true, Operand::N16), 12)),
         0o336 => Some((Instruction::SBC(Operand::A, Operand::N8), 8)),
         0o337 => Some((Instruction::RST(0x18), 16)),
@@ -605,7 +611,7 @@ pub fn get_instruction_specs_from_code(code: u8) -> Option<(Instruction,u64)>
         0o346 => Some((Instruction::AND(Operand::A, Operand::N8), 8)),
         0o347 => Some((Instruction::RST(0x20), 16)),
         0o350 => Some((Instruction::ADD(Operand::SP, Operand::E8), 16)),
-        0o351 => Some((Instruction::JR(Operand::HL), 4)),
+        0o351 => Some((Instruction::JP(JumpType::Absolute, Operand::HL), 4)),
         0o352 => Some((Instruction::LD(Operand::A, Operand::A16), 12)),
         0o356 => Some((Instruction::XOR(Operand::A, Operand::N8), 8)),
         0o357 => Some((Instruction::RST(0x28), 16)),
